@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Doubt Saathi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #FAF6EC;
+    --paper-line: #C9D6EE;
+    --margin-red: #B23A2E;
+    --ink: #1C2440;
+    --ink-soft: #4A5170;
+    --rule-blue: #35509A;
+    --tick-green: #2E7D5B;
+    --highlight: #F4C84C;
+    --card: #FFFFFF;
+    --shadow: rgba(28,36,64,0.10);
+    --error: #B23A2E;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    display:flex; align-items:center; justify-content:center;
+    padding: 24px;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image: repeating-linear-gradient(to bottom, transparent, transparent 37px, var(--paper-line) 37px, var(--paper-line) 38px);
+    opacity:0.5;
+  }
+
+  .card{
+    position:relative; z-index:1;
+    background: var(--card);
+    max-width: 420px; width:100%;
+    border-radius: 16px;
+    box-shadow: 0 14px 40px var(--shadow);
+    padding: 36px 32px;
+    border: 1px solid rgba(28,36,64,0.06);
+  }
+
+  .logo{
+    font-family:'Kalam', cursive; font-weight:700; font-size:1.4rem;
+    text-align:center; margin-bottom: 6px;
+  }
+  .logo span{ color:var(--margin-red); }
+  .subtitle{ text-align:center; color:var(--ink-soft); font-size:0.9rem; margin-bottom:28px; }
+
+  .step{ display:none; }
+  .step.active{ display:block; animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  label{
+    display:block; font-size:0.85rem; font-weight:600; margin-bottom:8px; color:var(--ink);
+  }
+  .phone-row{ display:flex; gap:8px; margin-bottom:6px; }
+  .cc{
+    background:#F1F5FC; border:1.5px solid var(--paper-line); border-radius:10px;
+    padding:12px 10px; font-family:'JetBrains Mono', monospace; font-weight:600; color:var(--ink-soft);
+    width:64px; text-align:center; flex-shrink:0;
+  }
+  input[type="tel"], input[type="text"]{
+    width:100%; padding:12px 14px; border-radius:10px; border:1.5px solid var(--paper-line);
+    font-family:'Work Sans', sans-serif; font-size:1rem; color:var(--ink); background:#FDFCFA;
+  }
+  input:focus{ outline:none; border-color:var(--rule-blue); }
+  .hint{ font-size:0.78rem; color:var(--ink-soft); margin: 6px 0 22px; }
+  .err{ font-size:0.8rem; color:var(--error); margin: 6px 0 0; display:none; font-weight:600; }
+
+  .otp-row{ display:flex; gap:8px; margin-bottom:6px; justify-content:space-between; }
+  .otp-box{
+    width:48px; height:56px; text-align:center; font-size:1.3rem; font-weight:700;
+    border-radius:10px; border:1.5px solid var(--paper-line); background:#FDFCFA; color:var(--ink);
+    font-family:'JetBrains Mono', monospace;
+  }
+  .otp-box:focus{ outline:none; border-color:var(--rule-blue); }
+
+  .resend{ font-size:0.85rem; color:var(--rule-blue); text-align:center; margin-top:16px; cursor:pointer; font-weight:600; }
+  .resend.disabled{ color:var(--ink-soft); cursor:default; }
+
+  .btn{
+    width:100%; padding:14px; border-radius:10px; border:none; cursor:pointer;
+    background:var(--rule-blue); color:white; font-weight:600; font-size:1rem;
+    box-shadow: 0 4px 0 #253d78; margin-top:6px;
+    transition: transform 0.15s ease;
+  }
+  .btn:hover{ transform:translateY(-2px); }
+  .btn:active{ transform:translateY(2px); box-shadow:0 2px 0 #253d78; }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; transform:none; }
+
+  .badge-row{
+    display:flex; align-items:center; gap:8px; margin-top:22px;
+    background: rgba(46,125,91,0.08); padding:10px 12px; border-radius:10px;
+  }
+  .badge-row .icon{ color:var(--tick-green); font-family:'JetBrains Mono', monospace; font-weight:700; }
+  .badge-row p{ margin:0; font-size:0.8rem; color:var(--ink-soft); }
+
+  .lock-note{
+    display:flex; gap:8px; align-items:flex-start; margin-top:16px;
+    background: #FDF3E0; padding:10px 12px; border-radius:10px;
+  }
+  .lock-note p{ margin:0; font-size:0.78rem; color:#7A5A1E; line-height:1.5; }
+
+  #recaptcha-container{ margin-top: 14px; }
+
+  .back-link{ display:inline-block; margin-bottom:16px; font-size:0.85rem; color:var(--ink-soft); text-decoration:none; cursor:pointer; }
+  .back-link:hover{ color:var(--rule-blue); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">Doubt<span>Saathi</span></div>
+  <div class="subtitle">For school students — verified &amp; safe</div>
+
+  <!-- STEP 1: Email -->
+  <div class="step active" id="step-email">
+    <label for="email">Enter your email</label>
+    <input type="text" id="email" placeholder="yourname@email.com" inputmode="email">
+    <p class="hint">This is only used to log in — it won't be shown to anyone.</p>
+    <p class="err" id="email-err">Enter a valid email address</p>
+    <button class="btn" id="send-otp-btn" onclick="sendOtp()">Send code</button>
+
+    <div class="badge-row">
+      <span class="icon">✓</span>
+      <p>Every account is email-verified — no fake or anonymous accounts.</p>
+    </div>
+  </div>
+
+  <!-- STEP 2: OTP -->
+  <div class="step" id="step-otp">
+    <a class="back-link" onclick="goBack('step-email')">← Change email</a>
+    <label>Enter the code sent to <span id="shown-email"></span></label>
+    <div class="otp-row">
+      <input class="otp-box" maxlength="1" inputmode="numeric">
+      <input class="otp-box" maxlength="1" inputmode="numeric">
+      <input class="otp-box" maxlength="1" inputmode="numeric">
+      <input class="otp-box" maxlength="1" inputmode="numeric">
+      <input class="otp-box" maxlength="1" inputmode="numeric">
+      <input class="otp-box" maxlength="1" inputmode="numeric">
+    </div>
+    <p class="err" id="otp-err">That code doesn't look right, try again</p>
+    <div class="resend" id="resend-btn">Resend code in 60s</div>
+    <button class="btn" onclick="verifyOtp()">Verify</button>
+  </div>
+
+  <!-- STEP 3: Set name -->
+  <div class="step" id="step-name">
+    <label for="display-name">Set your name</label>
+    <input type="text" id="display-name" placeholder="How other students will see you">
+    <p class="hint">This will be visible to everyone in your groups.</p>
+    <button class="btn" onclick="finishSetup()">Join Doubt Saathi 🎉</button>
+
+    <div class="lock-note">
+      <span>🔒</span>
+      <p><strong>Heads up:</strong> once set, your name is locked for the next 30 days — so no one can dodge accountability by switching names after misbehaving.</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+  // ─────────────────────────────────────────────
+  // Apna Supabase project connect hai
+  // ─────────────────────────────────────────────
+  const SUPABASE_URL = 'https://kqpftmmrelcrdpofrwal.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_glv8p0542LAoIriNqCrPDQ_mRSQnsO7';
+  const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let currentEmail = '';
+
+  function setBtnLoading(btn, loading, normalText){
+    btn.disabled = loading;
+    btn.textContent = loading ? 'Please wait…' : normalText;
+  }
+
+  window.sendOtp = async function(){
+    const email = document.getElementById('email').value.trim();
+    const err = document.getElementById('email-err');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+      err.style.display = 'block';
+      return;
+    }
+    err.style.display = 'none';
+    currentEmail = email;
+
+    const btn = document.getElementById('send-otp-btn');
+    setBtnLoading(btn, true, 'Send code');
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true }
+    });
+
+    setBtnLoading(btn, false, 'Send code');
+
+    if(error){
+      err.textContent = error.message;
+      err.style.display = 'block';
+      return;
+    }
+
+    document.getElementById('shown-email').textContent = email;
+    goTo('step-otp');
+    startResendTimer();
+    setTimeout(()=> document.querySelector('.otp-box').focus(), 300);
+  };
+
+  window.verifyOtp = async function(){
+    const boxes = document.querySelectorAll('.otp-box');
+    const code = Array.from(boxes).map(b => b.value).join('');
+    const err = document.getElementById('otp-err');
+
+    if(code.length !== 6){
+      err.textContent = 'Enter all 6 digits';
+      err.style.display = 'block';
+      return;
+    }
+
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: currentEmail,
+      token: code,
+      type: 'email'
+    });
+
+    if(error){
+      err.textContent = "That code doesn't look right, try again";
+      err.style.display = 'block';
+      return;
+    }
+    err.style.display = 'none';
+
+    // Check karo agar profile pehle se hai (returning user) to naam step skip karo
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', data.user.id)
+      .single();
+
+    if(profile && profile.name){
+      window.location.href = 'feed.html';
+    } else {
+      goTo('step-name');
+    }
+  };
+
+  window.finishSetup = async function(){
+    const name = document.getElementById('display-name').value.trim();
+    if(!name){ document.getElementById('display-name').focus(); return; }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      email: currentEmail,
+      name: name
+    });
+
+    if(error){
+      alert('Something went wrong: ' + error.message);
+      return;
+    }
+
+    window.location.href = 'feed.html';
+  };
+
+  window.goBack = function(id){ goTo(id); };
+
+  function goTo(id){
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function startResendTimer(){
+    let t = 60;
+    const btn = document.getElementById('resend-btn');
+    btn.classList.add('disabled');
+    const iv = setInterval(()=>{
+      t--;
+      btn.textContent = 'Resend code in ' + t + 's';
+      if(t<=0){
+        clearInterval(iv);
+        btn.textContent = 'Resend code';
+        btn.classList.remove('disabled');
+      }
+    }, 1000);
+  }
+
+  // OTP boxes: auto-advance + only digits
+  document.querySelectorAll('.otp-box').forEach((box, i, all) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/\D/g,'');
+      if(box.value && i < all.length - 1) all[i+1].focus();
+    });
+    box.addEventListener('keydown', (e) => {
+      if(e.key === 'Backspace' && !box.value && i > 0) all[i-1].focus();
+    });
+  });
+</script>
+
+</body>
+</html>
