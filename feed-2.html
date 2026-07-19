@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feed — Doubt Saathi</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #fdf6ec;
+    margin: 0;
+    color: #1a1a2e;
+  }
+  header {
+    background: #fff;
+    border-bottom: 1px solid #e5ddce;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header .logo { font-weight: 700; font-size: 18px; }
+  header .user-info { font-size: 13px; color: #666; display: flex; align-items: center; gap: 10px; }
+  header button {
+    background: none;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  main {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+  }
+  .composer {
+    background: #fff;
+    border: 1px solid #e5ddce;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .composer select, .composer textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    margin-bottom: 10px;
+    font-family: inherit;
+  }
+  .composer textarea { resize: vertical; min-height: 70px; }
+  .composer button {
+    background: #1a3b8f;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .composer button:disabled { background: #9aa8cf; }
+  .doubt-card {
+    background: #fff;
+    border: 1px solid #e5ddce;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .doubt-meta {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .doubt-subject {
+    display: inline-block;
+    background: #eef0fb;
+    color: #1a3b8f;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .doubt-content { font-size: 15px; line-height: 1.5; }
+  #status { text-align: center; color: #888; font-size: 14px; padding: 20px; }
+  #errorMsg { color: #c0392b; font-size: 13px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">DoubtSaathi</div>
+  <div class="user-info">
+    <span id="userEmail"></span>
+    <button id="logoutBtn">Logout</button>
+  </div>
+</header>
+
+<main>
+  <div class="composer">
+    <select id="subject">
+      <option value="Physics">Physics</option>
+      <option value="Chemistry">Chemistry</option>
+      <option value="Maths">Maths</option>
+      <option value="Biology">Biology</option>
+      <option value="English">English</option>
+      <option value="Computer Science">Computer Science</option>
+      <option value="Other">Other</option>
+    </select>
+    <textarea id="content" placeholder="Write your doubt here..."></textarea>
+    <button id="postBtn">Post Doubt</button>
+    <div id="errorMsg"></div>
+  </div>
+
+  <div id="feedList"></div>
+  <div id="status">Loading...</div>
+</main>
+
+<script>
+  const SUPABASE_URL = "https://kqpftmmrelcrdpofrwal.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_glv8p0542LAoIriNqCrPDQ_mRSQnsO7";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const feedList = document.getElementById("feedList");
+  const statusEl = document.getElementById("status");
+  const errorMsg = document.getElementById("errorMsg");
+
+  let currentUser = null;
+
+  async function init() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      window.location.href = "login.html";
+      return;
+    }
+    currentUser = session.user;
+    document.getElementById("userEmail").textContent = currentUser.email;
+    loadFeed();
+  }
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") window.location.href = "login.html";
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+  });
+
+  async function loadFeed() {
+    statusEl.textContent = "Loading...";
+    const { data, error } = await supabase
+      .from("doubts")
+      .select("id, subject, content, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      statusEl.textContent = "Couldn't load feed: " + error.message;
+      return;
+    }
+
+    feedList.innerHTML = "";
+    if (!data.length) {
+      statusEl.textContent = "No doubts yet. Be the first to post!";
+      return;
+    }
+    statusEl.textContent = "";
+
+    data.forEach(d => {
+      const card = document.createElement("div");
+      card.className = "doubt-card";
+      const time = new Date(d.created_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
+      card.innerHTML = `
+        <span class="doubt-subject">${escapeHtml(d.subject)}</span>
+        <div class="doubt-content">${escapeHtml(d.content)}</div>
+        <div class="doubt-meta"><span></span><span>${time}</span></div>
+      `;
+      feedList.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  document.getElementById("postBtn").addEventListener("click", async () => {
+    const subject = document.getElementById("subject").value;
+    const content = document.getElementById("content").value.trim();
+    errorMsg.textContent = "";
+
+    if (!content) {
+      errorMsg.textContent = "Write something before posting!";
+      return;
+    }
+
+    const btn = document.getElementById("postBtn");
+    btn.disabled = true;
+    btn.textContent = "Posting...";
+
+    const { error } = await supabase.from("doubts").insert({
+      user_id: currentUser.id,
+      subject,
+      content
+    });
+
+    btn.disabled = false;
+    btn.textContent = "Post Doubt";
+
+    if (error) {
+      errorMsg.textContent = "Couldn't post: " + error.message;
+      return;
+    }
+
+    document.getElementById("content").value = "";
+    loadFeed();
+  });
+
+  init();
+</script>
+
+</body>
+</html>
